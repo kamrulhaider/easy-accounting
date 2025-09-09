@@ -47,10 +47,32 @@ model User {
 
   auditLogs AuditLog[] @relation("UserAuditLogs")
 
+  // Self-referential auditing relations
+  createdById  String? // FK -> User.id
+  createdBy    User?   @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdUsers User[]  @relation("UserCreatedBy")
+
+  updatedById  String? // FK -> User.id
+  updatedBy    User?   @relation("UserUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  updatedUsers User[]  @relation("UserUpdatedBy")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  createdBy String? // optional, references User.id
-  updatedBy String? // optional, references User.id
+
+  // Back-relations for auditing on other models
+  companiesCreated      Company[]      @relation("CompanyCreatedBy")
+  companiesUpdated      Company[]      @relation("CompanyUpdatedBy")
+  accountsCreated       Account[]      @relation("AccountCreatedBy")
+  accountsUpdated       Account[]      @relation("AccountUpdatedBy")
+  journalEntriesCreated JournalEntry[] @relation("JournalEntryCreatedBy")
+  journalEntriesUpdated JournalEntry[] @relation("JournalEntryUpdatedBy")
+  journalLinesCreated   JournalLine[]  @relation("JournalLineCreatedBy")
+  journalLinesUpdated   JournalLine[]  @relation("JournalLineUpdatedBy")
+
+  @@index([companyId])
+  @@index([status])
+  @@index([createdById])
+  @@index([updatedById])
 }
 
 model Company {
@@ -68,10 +90,18 @@ model Company {
   accounts       Account[]
   journalEntries JournalEntry[]
 
+  // Auditing (references User)
+  createdById String?
+  createdBy   User?   @relation("CompanyCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  updatedById String?
+  updatedBy   User?   @relation("CompanyUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  createdBy String? // optional, references User.id
-  updatedBy String? // optional, references User.id
+
+  @@index([status])
+  @@index([createdById])
+  @@index([updatedById])
 }
 
 model Account {
@@ -82,16 +112,25 @@ model Account {
   status      CommonStatus @default(ACTIVE)
 
   companyId String
-  company   Company @relation(fields: [companyId], references: [id])
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   journalLines JournalLine[]
 
+  // Auditing (references User)
+  createdById String?
+  createdBy   User?   @relation("AccountCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  updatedById String?
+  updatedBy   User?   @relation("AccountUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  createdBy String? // optional, references User.id
-  updatedBy String? // optional, references User.id
 
   @@unique([companyId, name]) // unique account name per company
+  @@index([companyId])
+  @@index([status])
+  @@index([accountType])
+  @@index([createdById])
+  @@index([updatedById])
 }
 
 model JournalEntry {
@@ -101,14 +140,23 @@ model JournalEntry {
   description String? // optional
 
   companyId String
-  company   Company @relation(fields: [companyId], references: [id])
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   journalLines JournalLine[]
 
+  // Auditing (references User)
+  createdById String?
+  createdBy   User?   @relation("JournalEntryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  updatedById String?
+  updatedBy   User?   @relation("JournalEntryUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  createdBy String? // optional, references User.id
-  updatedBy String? // optional, references User.id
+
+  @@index([companyId])
+  @@index([date])
+  @@index([createdById])
+  @@index([updatedById])
 }
 
 model JournalLine {
@@ -118,14 +166,25 @@ model JournalLine {
   description  String? // optional
 
   journalEntryId String
-  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id])
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   accountId      String
-  account        Account      @relation(fields: [accountId], references: [id])
+  account        Account      @relation(fields: [accountId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // Auditing (references User)
+  createdById String?
+  createdBy   User?   @relation("JournalLineCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  updatedById String?
+  updatedBy   User?   @relation("JournalLineUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  createdBy String? // optional, references User.id
-  updatedBy String? // optional, references User.id
+
+  // NOTE: Add a raw SQL migration with a CHECK constraint enforcing XOR of debitAmount/creditAmount
+  // Example: ALTER TABLE "JournalLine" ADD CONSTRAINT journalline_debit_xor_credit CHECK (("debitAmount" IS NOT NULL AND "creditAmount" IS NULL) OR ("debitAmount" IS NULL AND "creditAmount" IS NOT NULL));
+
+  @@index([journalEntryId])
+  @@index([accountId])
+  @@index([createdById])
 }
 
 model AuditLog {
@@ -136,7 +195,11 @@ model AuditLog {
   changes  String? // optional, JSON string of changes
 
   performedBy String? // optional, references User.id
-  user        User?   @relation("UserAuditLogs", fields: [performedBy], references: [id])
+  user        User?   @relation("UserAuditLogs", fields: [performedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   performedAt DateTime @default(now())
+
+  @@index([entity])
+  @@index([entityId])
+  @@index([performedBy])
 }
