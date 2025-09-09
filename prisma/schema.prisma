@@ -1,0 +1,142 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  MODERATOR
+  COMPANY_ADMIN
+  COMPANY_USER
+}
+
+enum CommonStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+  SUSPENDED
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+model User {
+  id       String @id @default(uuid())
+  username String @unique
+  email    String @unique
+  password String
+
+  phone   String? // optional
+  name    String? // optional
+  address String? // optional
+
+  userRole UserRole     @default(COMPANY_USER)
+  status   CommonStatus @default(ACTIVE)
+
+  companyId String? // optional, references Company.id
+  company   Company? @relation(fields: [companyId], references: [id])
+
+  auditLogs AuditLog[] @relation("UserAuditLogs")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String? // optional, references User.id
+  updatedBy String? // optional, references User.id
+}
+
+model Company {
+  id    String @id @default(uuid())
+  name  String
+  email String @unique
+
+  description String? // optional
+  address     String? // optional
+  phone       String? // optional
+
+  status CommonStatus @default(ACTIVE)
+
+  users          User[]
+  accounts       Account[]
+  journalEntries JournalEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String? // optional, references User.id
+  updatedBy String? // optional, references User.id
+}
+
+model Account {
+  id   String @id @default(uuid())
+  name String
+
+  accountType AccountType
+  status      CommonStatus @default(ACTIVE)
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+
+  journalLines JournalLine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String? // optional, references User.id
+  updatedBy String? // optional, references User.id
+
+  @@unique([companyId, name]) // unique account name per company
+}
+
+model JournalEntry {
+  id   String   @id @default(uuid())
+  date DateTime
+
+  description String? // optional
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+
+  journalLines JournalLine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String? // optional, references User.id
+  updatedBy String? // optional, references User.id
+}
+
+model JournalLine {
+  id           String  @id @default(uuid())
+  debitAmount  Float? // optional, one of debitAmount or creditAmount must be set
+  creditAmount Float? // optional, one of debitAmount or creditAmount must be set
+  description  String? // optional
+
+  journalEntryId String
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id])
+  accountId      String
+  account        Account      @relation(fields: [accountId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String? // optional, references User.id
+  updatedBy String? // optional, references User.id
+}
+
+model AuditLog {
+  id       String  @id @default(uuid())
+  action   String
+  entity   String
+  entityId String
+  changes  String? // optional, JSON string of changes
+
+  performedBy String? // optional, references User.id
+  user        User?   @relation("UserAuditLogs", fields: [performedBy], references: [id])
+
+  performedAt DateTime @default(now())
+}
