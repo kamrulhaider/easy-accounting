@@ -1,22 +1,28 @@
-import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import express from "express";
+import { loadUser, requestLogger, errorHandler } from "./middlewares/auth";
+import { companyRouter } from "./routers/company";
+import { userRouter } from "./routers/user";
 
-const app = express();
-const prisma = new PrismaClient();
+export const app = express();
 app.use(express.json());
+app.use(requestLogger);
+app.use(loadUser);
 
-app.get('/', (_req, res) => res.send('OK'));
+// routes
+app.use("/companies", companyRouter);
+app.use("/auth", userRouter);
 
-app.get('/users', async (_req, res) => {
-  const users = await prisma.user.findMany();
-  res.json(users);
+// Lightweight health endpoint (no heavy DB query)
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", uptime: process.uptime(), timestamp: Date.now() });
 });
+app.get("/", (_req, res) => res.send("Easy-Accouting is running"));
+// Error handler (after routes)
+app.use(errorHandler);
 
-app.post('/users', async (req, res) => {
-  const { email, name } = req.body;
-  const user = await prisma.user.create({ data: { email, name } });
-  res.json(user);
-});
-
-const port = Number(process.env.PORT) || 4000;
-app.listen(port, () => console.log(`Server running on http://localhost:${port}`));
+if (require.main === module) {
+  const port = Number(process.env.PORT) || 4000;
+  app.listen(port, () =>
+    console.log(`Server running on http://localhost:${port}`)
+  );
+}
