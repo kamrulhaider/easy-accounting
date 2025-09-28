@@ -7,7 +7,7 @@ import { logger } from "../../utils/logger";
 // Simple helper to build JWT payload
 function signToken(payload: object) {
   const secret = process.env.JWT_SECRET || "dev-secret-change";
-  return jwt.sign(payload, secret, { expiresIn: "1h" });
+  return jwt.sign(payload, secret, { expiresIn: "30d" });
 }
 
 // POST /auth/login
