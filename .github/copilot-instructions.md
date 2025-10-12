@@ -48,7 +48,7 @@ Patterns and gotchas
 - Keep Prisma client usage centralized via `src/prisma.ts` (do not create new PrismaClient instances per request).
 - Use transactions where multiple related DB changes occur (see `createCompany.ts` with `prisma.$transaction` using the transactional client `tx`).
 - Controllers return JSON errors with `error` field and sometimes include `requestId`. Preserve this shape when adding endpoints.
-- The `getCompanies` controller file exists but is empty — prefer implementing new controllers following `createCompany.ts` conventions (validation, transaction when needed, try/catch, proper status codes).
+- `getCompanies` is implemented and restricted to `SUPER_ADMIN` and `MODERATOR` roles; it returns rich pagination metadata (limit, offset, currentPage, pageCount, itemsOnPage, hasNextPage, hasPrevPage, nextOffset, prevOffset). Use it as the reference pattern for future paginated list endpoints.
 - Tests run with NODE_ENV=test. Avoid relying on global state between tests; the project connects/disconnects Prisma in jest setup/teardown.
 
 Examples to copy/paste
