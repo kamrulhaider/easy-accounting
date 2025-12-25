@@ -7,8 +7,10 @@ import {
 } from "./middlewares/auth";
 import { companyRouter } from "./routers/company";
 import { userRouter } from "./routers/user";
+import { usersRouter } from "./routers/users";
 import { accountRouter } from "./routers/account";
 import { accountCategoryRouter } from "./routers/accountCategory";
+import { journalEntryRouter } from "./routers/journalEntry";
 import cors from "cors";
 
 export const app = express();
@@ -21,8 +23,10 @@ app.use(attachAuditContext);
 // routes
 app.use("/companies", companyRouter);
 app.use("/auth", userRouter);
+app.use("/users", usersRouter);
 app.use("/accounts", accountRouter);
 app.use("/account-categories", accountCategoryRouter);
+app.use("/journal-entries", journalEntryRouter);
 
 // Lightweight health endpoint (no heavy DB query)
 app.get("/health", (req, res) => {
