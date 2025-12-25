@@ -4,7 +4,7 @@ This file contains concise, project-specific guidance to help AI assistants be p
 
 Overview
 
-- This is a small Express + TypeScript API backed by Prisma (Postgres). Key folders: `src/` (app code), `prisma/` (schema + seed), `__tests__/` (jest tests).
+- This is a small Express + TypeScript API backed by Prisma (Postgres). Key folders: `src/` (app code), `prisma/` (schema + seed).
 - App entry: `src/index.ts`. Prisma client is created in `src/prisma.ts` and used directly from controllers.
 
 Architecture and data flow
@@ -37,11 +37,10 @@ Developer workflows (commands)
 - Run in dev mode (ts-node-dev): npm run dev (uses `src/index.ts`) on port via `PORT` env var (default 4000).
 - Build: npm run build (tsc) then npm start to run compiled `dist/index.js`.
 - Seed database: npm run seed (invokes `ts-node prisma/seed.ts`).
-- Tests: npm test (uses dotenv-cli to load `.env.test`, runs jest in-band). Tests call `prisma.$connect()` in `jest.setup.ts` and expect a test DB connection.
 
 Environment
 
-- .env variables to be aware of: `DATABASE_URL` (Postgres), `JWT_SECRET` (token signing). Tests use `.env.test` via `dotenv-cli`.
+- .env variables to be aware of: `DATABASE_URL` (Postgres), `JWT_SECRET` (token signing).
 
 Patterns and gotchas
 
@@ -49,7 +48,6 @@ Patterns and gotchas
 - Use transactions where multiple related DB changes occur (see `createCompany.ts` with `prisma.$transaction` using the transactional client `tx`).
 - Controllers return JSON errors with `error` field and sometimes include `requestId`. Preserve this shape when adding endpoints.
 - `getCompanies` is implemented and restricted to `SUPER_ADMIN` and `MODERATOR` roles; it returns rich pagination metadata (limit, offset, currentPage, pageCount, itemsOnPage, hasNextPage, hasPrevPage, nextOffset, prevOffset). Use it as the reference pattern for future paginated list endpoints.
-- Tests run with NODE_ENV=test. Avoid relying on global state between tests; the project connects/disconnects Prisma in jest setup/teardown.
 
 Examples to copy/paste
 
@@ -59,7 +57,6 @@ Examples to copy/paste
 When editing repository files
 
 - Preserve CommonJS `type: "commonjs"` behavior or update `package.json` and build steps intentionally if switching to ESM.
-- Run the test suite locally after changes: `npm test` and ensure `jest.setup.ts` connects/disconnects Prisma.
 
 What NOT to do
 
