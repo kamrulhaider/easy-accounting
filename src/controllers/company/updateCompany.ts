@@ -54,7 +54,7 @@ export async function updateCompany(req: Request, res: Response) {
 
     const updated = await prisma.company.update({
       where: { id: companyId },
-      data: { ...updatable, updatedById: actor.id },
+      data: { ...updatable },
       select: {
         id: true,
         name: true,
@@ -65,8 +65,7 @@ export async function updateCompany(req: Request, res: Response) {
         status: true,
         createdAt: true,
         updatedAt: true,
-        createdById: true,
-        updatedById: true,
+        deletedAt: true,
       },
     });
 

@@ -11,11 +11,12 @@ export async function getCompanies(req: Request, res: Response) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  // Only SUPER_ADMIN and MODERATOR may list companies
-  if (
-    actor.userRole !== UserRole.SUPER_ADMIN &&
-    actor.userRole !== UserRole.MODERATOR
-  ) {
+  // SUPER_ADMIN and MODERATOR can list all; COMPANY_ADMIN limited to their company
+  const isElevated =
+    actor.userRole === UserRole.SUPER_ADMIN ||
+    actor.userRole === UserRole.MODERATOR;
+  const isCompanyAdmin = actor.userRole === UserRole.COMPANY_ADMIN;
+  if (!isElevated && !isCompanyAdmin) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
@@ -26,6 +27,10 @@ export async function getCompanies(req: Request, res: Response) {
     typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) : 50;
   const offsetRaw =
     typeof req.query.offset === "string" ? parseInt(req.query.offset, 10) : 0;
+  const includeDeletedParam =
+    typeof req.query.includeDeleted === "string"
+      ? req.query.includeDeleted.toLowerCase() === "true"
+      : false;
 
   const limit = Number.isFinite(limitRaw)
     ? Math.min(Math.max(limitRaw, 1), 100)
@@ -48,11 +53,22 @@ export async function getCompanies(req: Request, res: Response) {
       where.status = status;
     }
 
-    // No additional scoping: SUPER_ADMIN and MODERATOR see companies per filters
+    // Build effective where with role-based scoping and deleted flag
+    let effectiveWhere: any = { ...where };
+    if (!includeDeletedParam || !isElevated) {
+      // Exclude soft-deleted unless elevated explicitly requests includeDeleted
+      effectiveWhere.deletedAt = null;
+    }
+    if (isCompanyAdmin) {
+      if (!actor.companyId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      effectiveWhere.id = actor.companyId;
+    }
 
     const [companies, total] = await Promise.all([
       prisma.company.findMany({
-        where,
+        where: effectiveWhere,
         orderBy: { createdAt: "desc" },
         take: limit,
         skip: offset,
@@ -66,11 +82,10 @@ export async function getCompanies(req: Request, res: Response) {
           status: true,
           createdAt: true,
           updatedAt: true,
-          createdById: true,
-          updatedById: true,
+          deletedAt: true,
         },
       }),
-      prisma.company.count({ where }),
+      prisma.company.count({ where: effectiveWhere }),
     ]);
 
     const itemsOnPage = companies.length;

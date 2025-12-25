@@ -10,15 +10,11 @@ export async function deactivateAccount(req: Request, res: Response) {
   try {
     const account = await prisma.account.findUnique({ where: { id } });
     if (!account) return res.status(404).json({ error: "Account not found" });
-    const user = await prisma.user.findUnique({
-      where: { id: actor.id },
-      select: { companyId: true },
-    });
-    if (!user || user.companyId !== account.companyId)
+    if (!actor.companyId || actor.companyId !== account.companyId)
       return res.status(403).json({ error: "Forbidden" });
     const updated = await prisma.account.update({
       where: { id },
-      data: { status: "INACTIVE", updatedById: actor.id },
+      data: { status: "INACTIVE" },
       select: { id: true, name: true, status: true },
     });
     return res.json({ account: updated });

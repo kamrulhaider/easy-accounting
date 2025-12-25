@@ -17,17 +17,15 @@ export async function getAccount(req: Request, res: Response) {
         accountType: true,
         status: true,
         companyId: true,
+        categoryId: true,
+        category: { select: { id: true, name: true } },
         createdAt: true,
         updatedAt: true,
       },
     });
     if (!account) return res.status(404).json({ error: "Account not found" });
 
-    const user = await prisma.user.findUnique({
-      where: { id: actor.id },
-      select: { companyId: true },
-    });
-    if (!user || user.companyId !== account.companyId)
+    if (!actor.companyId || actor.companyId !== account.companyId)
       return res.status(403).json({ error: "Forbidden" });
 
     return res.json({ account });

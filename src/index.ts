@@ -1,8 +1,14 @@
 import express from "express";
-import { loadUser, requestLogger, errorHandler } from "./middlewares/auth";
+import {
+  loadUser,
+  requestLogger,
+  errorHandler,
+  attachAuditContext,
+} from "./middlewares/auth";
 import { companyRouter } from "./routers/company";
 import { userRouter } from "./routers/user";
 import { accountRouter } from "./routers/account";
+import { accountCategoryRouter } from "./routers/accountCategory";
 import cors from "cors";
 
 export const app = express();
@@ -10,11 +16,13 @@ app.use(express.json());
 app.use(cors());
 app.use(requestLogger);
 app.use(loadUser);
+app.use(attachAuditContext);
 
 // routes
 app.use("/companies", companyRouter);
 app.use("/auth", userRouter);
 app.use("/accounts", accountRouter);
+app.use("/account-categories", accountCategoryRouter);
 
 // Lightweight health endpoint (no heavy DB query)
 app.get("/health", (req, res) => {

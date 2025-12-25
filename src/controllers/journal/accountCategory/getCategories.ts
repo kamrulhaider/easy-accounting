@@ -1,17 +1,14 @@
 import { Request, Response } from "express";
 import { prisma } from "../../../prisma";
-import { AccountType, CommonStatus } from "@prisma/client";
 
-// GET /accounts?companyId=...&q=&type=&status=&categoryId=&limit=&offset=&all=true
-export async function getAccounts(req: Request, res: Response) {
+// GET /account-categories?companyId=...&q=&limit=&offset=&all=true
+export async function getCategories(req: Request, res: Response) {
   const actor = req.user;
   if (!actor) return res.status(401).json({ error: "Unauthorized" });
-  const { companyId, q, type, status, categoryId } = req.query;
+  const { companyId, q } = req.query;
   if (!companyId || typeof companyId !== "string") {
     return res.status(400).json({ error: "companyId required" });
   }
-
-  // Use attached companyId from middleware
   if (!actor.companyId)
     return res.status(403).json({ error: "User has no company context" });
   if (actor.companyId !== companyId)
@@ -37,34 +34,12 @@ export async function getAccounts(req: Request, res: Response) {
     : 0;
 
   const where: any = { companyId };
-  if (q && typeof q === "string") {
+  if (q && typeof q === "string")
     where.name = { contains: q, mode: "insensitive" };
-  }
-  if (
-    type &&
-    typeof type === "string" &&
-    Object.values(AccountType).includes(type as AccountType)
-  ) {
-    where.accountType = type;
-  }
-  if (
-    status &&
-    typeof status === "string" &&
-    Object.values(CommonStatus).includes(status as CommonStatus)
-  ) {
-    where.status = status;
-  }
-  if (categoryId && typeof categoryId === "string") {
-    if (categoryId === "null") {
-      where.categoryId = null;
-    } else {
-      where.categoryId = categoryId;
-    }
-  }
 
   try {
-    const [accounts, total, totalAccounts] = await Promise.all([
-      prisma.account.findMany({
+    const [categories, total] = await Promise.all([
+      prisma.accountCategory.findMany({
         where,
         orderBy: { name: "asc" },
         take: typeof limit === "number" ? limit : undefined,
@@ -72,19 +47,43 @@ export async function getAccounts(req: Request, res: Response) {
         select: {
           id: true,
           name: true,
-          accountType: true,
-          status: true,
           companyId: true,
-          categoryId: true,
-          category: { select: { id: true, name: true } },
           createdAt: true,
           updatedAt: true,
         },
       }),
-      prisma.account.count({ where }),
-      prisma.account.count({ where: { companyId: companyId as string } }),
+      prisma.accountCategory.count({ where }),
     ]);
-    const itemsOnPage = accounts.length;
+
+    // Compute account counts for the categories returned
+    const ids = categories.map((c) => c.id);
+    const counts = ids.length
+      ? await prisma.account.groupBy({
+          by: ["categoryId"],
+          where: { companyId: companyId as string, categoryId: { in: ids } },
+          _count: { _all: true },
+        })
+      : [];
+    const countMap = new Map<string, number>();
+    for (const row of counts as Array<{
+      categoryId: string | null;
+      _count: { _all: number };
+    }>) {
+      if (row.categoryId) countMap.set(row.categoryId, row._count._all);
+    }
+    const categoriesWithCount = categories.map((c) => ({
+      ...c,
+      accountCount: countMap.get(c.id) ?? 0,
+    }));
+    // Count uncategorized accounts in this company
+    const uncategorizedCount = await prisma.account.count({
+      where: { companyId: companyId as string, categoryId: null },
+    });
+
+    const itemsOnPage = categories.length;
+    const totalAccounts =
+      (categoriesWithCount.reduce((sum, c) => sum + (c.accountCount || 0), 0) ||
+        0) + (uncategorizedCount || 0);
     const pageCount =
       typeof limit === "number" && limit > 0 ? Math.ceil(total / limit) : 1;
     const currentPage =
@@ -92,8 +91,9 @@ export async function getAccounts(req: Request, res: Response) {
         ? Math.floor(offset / limit) + 1
         : 1;
     return res.json({
-      accounts,
+      categories: categoriesWithCount,
       total,
+      uncategorizedCount,
       totalAccounts,
       pagination: {
         limit: typeof limit === "number" ? limit : null,
@@ -115,6 +115,6 @@ export async function getAccounts(req: Request, res: Response) {
       },
     });
   } catch (e: any) {
-    return res.status(500).json({ error: "Failed to fetch accounts" });
+    return res.status(500).json({ error: "Failed to fetch categories" });
   }
 }

@@ -3,11 +3,11 @@ import { prisma } from "../../../prisma";
 import { AccountType, CommonStatus } from "@prisma/client";
 
 // POST /accounts
-// Body: { companyId, name, accountType }
+// Body: { companyId, name, accountType, categoryId? }
 export async function createAccount(req: Request, res: Response) {
   const actor = req.user;
   if (!actor) return res.status(401).json({ error: "Unauthorized" });
-  const { companyId, name, accountType } = req.body || {};
+  const { companyId, name, accountType, categoryId } = req.body || {};
 
   if (!companyId || !name || !accountType) {
     return res
@@ -18,20 +18,16 @@ export async function createAccount(req: Request, res: Response) {
     return res.status(400).json({ error: "Invalid accountType" });
   }
 
-  // Fetch the authenticated user's company to enforce ownership (middleware does not attach companyId).
-  const user = await prisma.user.findUnique({
-    where: { id: actor.id },
-    select: { companyId: true },
-  });
-  if (!user || !user.companyId)
+  // Enforce ownership using attached companyId from middleware
+  if (!actor.companyId)
     return res.status(403).json({ error: "User has no company context" });
-  if (user.companyId !== companyId)
+  if (actor.companyId !== companyId)
     return res.status(403).json({ error: "Forbidden" });
 
   try {
     // Ensure company exists & active
     const company = await prisma.company.findUnique({
-      where: { id: user.companyId },
+      where: { id: actor.companyId },
       select: { id: true, status: true },
     });
     if (!company) return res.status(404).json({ error: "Company not found" });
@@ -39,19 +35,33 @@ export async function createAccount(req: Request, res: Response) {
       return res.status(400).json({ error: "Company inactive" });
 
     const existing = await prisma.account.findFirst({
-      where: { companyId: user.companyId, name },
+      where: { companyId: actor.companyId, name },
     });
     if (existing)
       return res
         .status(400)
         .json({ error: "Account name already exists in company" });
 
+    // Validate optional category belongs to the same company
+    let validatedCategoryId: string | null | undefined = undefined;
+    if (categoryId) {
+      const category = await prisma.accountCategory.findUnique({
+        where: { id: categoryId },
+        select: { id: true, companyId: true },
+      });
+      if (!category)
+        return res.status(400).json({ error: "Invalid categoryId" });
+      if (category.companyId !== actor.companyId)
+        return res.status(403).json({ error: "Forbidden category" });
+      validatedCategoryId = category.id;
+    }
+
     const account = await prisma.account.create({
       data: {
-        companyId: user.companyId,
+        companyId: actor.companyId,
         name,
         accountType,
-        createdById: actor.id,
+        categoryId: validatedCategoryId ?? null,
       },
       select: {
         id: true,
@@ -59,6 +69,7 @@ export async function createAccount(req: Request, res: Response) {
         accountType: true,
         status: true,
         companyId: true,
+        categoryId: true,
         createdAt: true,
         updatedAt: true,
       },

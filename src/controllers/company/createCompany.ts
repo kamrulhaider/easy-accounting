@@ -39,7 +39,7 @@ export async function createCompany(req: Request, res: Response) {
           description: company.description,
           address: company.address,
           phone: company.phone,
-          createdById: actor.id,
+          // status defaults to ACTIVE via schema
         },
       });
 
@@ -56,7 +56,6 @@ export async function createCompany(req: Request, res: Response) {
           phone: admin.phone,
           address: admin.address,
           companyId: createdCompany.id,
-          createdById: actor.id,
         },
         select: {
           id: true,

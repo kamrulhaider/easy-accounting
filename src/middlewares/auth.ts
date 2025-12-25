@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { prisma } from "../prisma";
+import { prisma, runWithAuditContext } from "../prisma";
 import { UserRole } from "@prisma/client";
 import { logger } from "../utils/logger";
 import { randomUUID } from "crypto";
@@ -9,7 +9,7 @@ import jwt from "jsonwebtoken";
 declare global {
   namespace Express {
     interface Request {
-      user?: { id: string; userRole: UserRole };
+      user?: { id: string; userRole: UserRole; companyId?: string | null };
       requestId?: string;
     }
   }
@@ -72,7 +72,11 @@ export async function loadUser(
     try {
       const user = await prisma.user.findUnique({ where: { id: userId } });
       if (user) {
-        req.user = { id: user.id, userRole: user.userRole };
+        req.user = {
+          id: user.id,
+          userRole: user.userRole,
+          companyId: user.companyId,
+        };
       } else {
         return res
           .status(401)
@@ -90,6 +94,20 @@ export async function loadUser(
     }
   }
   next();
+}
+
+// Attach per-request audit context for Prisma middleware
+export function attachAuditContext(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) {
+  const ctx = {
+    userId: req.user?.id,
+    companyId: req.user?.companyId ?? undefined,
+    requestId: req.requestId,
+  };
+  runWithAuditContext(ctx, () => next());
 }
 
 export function requireRole(roles: UserRole[]) {
