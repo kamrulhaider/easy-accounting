@@ -11,6 +11,7 @@ import { usersRouter } from "./routers/users";
 import { accountRouter } from "./routers/account";
 import { accountCategoryRouter } from "./routers/accountCategory";
 import { journalEntryRouter } from "./routers/journalEntry";
+import { ledgerRouter } from "./routers/ledger";
 import cors from "cors";
 
 export const app = express();
@@ -27,6 +28,7 @@ app.use("/users", usersRouter);
 app.use("/accounts", accountRouter);
 app.use("/account-categories", accountCategoryRouter);
 app.use("/journal-entries", journalEntryRouter);
+app.use("/ledger", ledgerRouter);
 
 // Lightweight health endpoint (no heavy DB query)
 app.get("/health", (req, res) => {
