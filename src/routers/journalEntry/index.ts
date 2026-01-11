@@ -21,15 +21,14 @@ journalEntryRouter.get(
   getJournalEntry
 );
 
-// Mutations - COMPANY_ADMIN only
 journalEntryRouter.post(
   "/",
-  requireRole([UserRole.COMPANY_ADMIN]),
+  requireRole([UserRole.COMPANY_ADMIN, UserRole.COMPANY_USER]),
   createJournalEntry
 );
 journalEntryRouter.patch(
   "/:id",
-  requireRole([UserRole.COMPANY_ADMIN]),
+  requireRole([UserRole.COMPANY_ADMIN, UserRole.COMPANY_USER]),
   updateJournalEntry
 );
 journalEntryRouter.delete(
@@ -37,5 +36,3 @@ journalEntryRouter.delete(
   requireRole([UserRole.COMPANY_ADMIN]),
   deleteJournalEntry
 );
-
-// No separate line mutation routes; lines handled within create/update entry

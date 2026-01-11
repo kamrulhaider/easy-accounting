@@ -9,9 +9,11 @@ import { UserRole } from "@prisma/client";
 
 export const accountRouter = Router();
 
-// Account routes: read access for COMPANY_ADMIN & COMPANY_USER; mutating actions restricted to COMPANY_ADMIN.
-// Assumption: Only COMPANY_ADMIN should update/deactivate accounts (adjust if broader access desired).
-accountRouter.post("/", requireRole([UserRole.COMPANY_ADMIN]), createAccount);
+accountRouter.post(
+  "/",
+  requireRole([UserRole.COMPANY_ADMIN, UserRole.COMPANY_USER]),
+  createAccount
+);
 accountRouter.get(
   "/",
   requireRole([UserRole.COMPANY_ADMIN, UserRole.COMPANY_USER]),
@@ -24,11 +26,11 @@ accountRouter.get(
 );
 accountRouter.patch(
   "/:id",
-  requireRole([UserRole.COMPANY_ADMIN]),
+  requireRole([UserRole.COMPANY_ADMIN, UserRole.COMPANY_USER]),
   updateAccount
 );
 accountRouter.patch(
   "/:id/deactivate",
-  requireRole([UserRole.COMPANY_ADMIN]),
+  requireRole([UserRole.COMPANY_ADMIN, UserRole.COMPANY_USER]),
   deactivateAccount
 );

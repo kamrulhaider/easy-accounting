@@ -11,20 +11,12 @@ import { deleteCompany } from "../../controllers/company/deleteCompany";
 
 export const companyRouter = Router();
 
-companyRouter.post(
-  "/",
-  requireRole([UserRole.SUPER_ADMIN, UserRole.MODERATOR]),
-  createCompany
-);
+companyRouter.post("/", requireRole([UserRole.SUPER_ADMIN]), createCompany);
 
 // GET /companies - returns paginated companies. Controller enforces role-scoping.
 companyRouter.get(
   "/",
-  requireRole([
-    UserRole.SUPER_ADMIN,
-    UserRole.MODERATOR,
-    UserRole.COMPANY_ADMIN,
-  ]),
+  requireRole([UserRole.SUPER_ADMIN, UserRole.MODERATOR]),
   getCompanies
 );
 
@@ -44,7 +36,7 @@ companyRouter.get(
 // PATCH /companies/:id/deactivate
 companyRouter.patch(
   "/:id/deactivate",
-  requireRole([UserRole.SUPER_ADMIN, UserRole.MODERATOR]),
+  requireRole([UserRole.SUPER_ADMIN]),
   deactivateCompany
 );
 

@@ -12,7 +12,7 @@ export const accountCategoryRouter = Router();
 // COMPANY_ADMIN can mutate; COMPANY_USER can read
 accountCategoryRouter.post(
   "/",
-  requireRole([UserRole.COMPANY_ADMIN]),
+  requireRole([UserRole.COMPANY_ADMIN, UserRole.COMPANY_USER]),
   createCategory
 );
 accountCategoryRouter.get(
@@ -22,7 +22,7 @@ accountCategoryRouter.get(
 );
 accountCategoryRouter.patch(
   "/:id",
-  requireRole([UserRole.COMPANY_ADMIN]),
+  requireRole([UserRole.COMPANY_ADMIN, UserRole.COMPANY_USER]),
   updateCategory
 );
 accountCategoryRouter.delete(
