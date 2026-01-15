@@ -3,9 +3,9 @@
 Base URL: `http://localhost:4000`
 Authentication: This endpoint does **not** require an existing token. It issues a new JWT on success.
 
-All endpoints in this document are mounted under `/users`.
+All endpoints in this document are mounted under `/auth`.
 
-## POST /users/login
+## POST /auth/login
 
 Authenticate a user by username or email and password.
 
