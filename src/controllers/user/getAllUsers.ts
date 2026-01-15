@@ -76,6 +76,11 @@ export async function getAllUsers(req: Request, res: Response) {
           status: true,
           userRole: true,
           companyId: true,
+          company: {
+            select: {
+              name: true,
+            },
+          },
           createdAt: true,
           updatedAt: true,
         },

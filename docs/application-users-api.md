@@ -36,7 +36,10 @@ List all users in the application, with optional filters and pagination.
         "address": "123 Main St",
         "status": "ACTIVE",
         "userRole": "SUPER_ADMIN",
-        "companyId": null,
+        "companyId": "company-uuid-or-null",
+        "company": {
+          "name": "Acme Inc."
+        },
         "createdAt": "2025-01-01T12:00:00.000Z",
         "updatedAt": "2025-01-02T09:00:00.000Z"
       }
@@ -66,3 +69,54 @@ List all users in the application, with optional filters and pagination.
       ```json
       { "error": "Failed to list users", "requestId": "..." }
       ```
+
+## PATCH /users/admins/:id
+
+Update basic fields for a `COMPANY_ADMIN` user in any company.
+
+- Role: `SUPER_ADMIN`
+- Authentication: **Required** (`Authorization: Bearer <token>`)
+- Path params:
+  - `id` – user id of the target `COMPANY_ADMIN`.
+- Body (JSON):
+  ```json
+  {
+    "name": "Updated Admin",
+    "phone": "+1-555-1111",
+    "address": "456 Second St",
+    "status": "INACTIVE"
+  }
+  ```
+  - All fields are optional; at least one valid field must be provided.
+- Behavior:
+  - Ensures the authenticated actor has role `SUPER_ADMIN`.
+  - Ensures the target user exists, is not soft-deleted, and has `userRole = COMPANY_ADMIN`.
+  - Applies only provided, valid fields; ignores unknown fields and rejects when no valid fields are present.
+- Success (200):
+  ```json
+  {
+    "user": {
+      "id": "...",
+      "username": "company-admin",
+      "email": "admin@acme.test",
+      "name": "Updated Admin",
+      "phone": "+1-555-1111",
+      "address": "456 Second St",
+      "status": "INACTIVE",
+      "userRole": "COMPANY_ADMIN",
+      "companyId": "company-uuid",
+      "createdAt": "2025-01-01T12:00:00.000Z",
+      "updatedAt": "2025-01-03T10:00:00.000Z"
+    }
+  }
+  ```
+- Error responses (examples):
+  - `400 Bad Request`
+    - Missing id: `{ "error": "User id required", "requestId": "..." }`
+    - No valid fields: `{ "error": "No valid fields to update", "requestId": "..." }`
+  - `403 Forbidden`
+    - Actor is not `SUPER_ADMIN` or target user is not a `COMPANY_ADMIN`: `{ "error": "Forbidden", "requestId": "..." }`
+  - `404 Not Found`
+    - User not found or soft-deleted: `{ "error": "User not found", "requestId": "..." }`
+  - `500 Internal Server Error`
+    - Unexpected failure: `{ "error": "Failed to update user", "requestId": "..." }`
