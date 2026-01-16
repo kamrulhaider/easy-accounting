@@ -13,6 +13,7 @@ import { accountCategoryRouter } from "./routers/accountCategory";
 import { journalEntryRouter } from "./routers/journalEntry";
 import { ledgerRouter } from "./routers/ledger";
 import { trialBalanceRouter } from "./routers/trialBalance";
+import { auditLogRouter } from "./routers/auditLog";
 import cors from "cors";
 
 export const app = express();
@@ -31,6 +32,7 @@ app.use("/account-categories", accountCategoryRouter);
 app.use("/journal-entries", journalEntryRouter);
 app.use("/ledger", ledgerRouter);
 app.use("/trial-balance", trialBalanceRouter);
+app.use("/audit-logs", auditLogRouter);
 
 // Lightweight health endpoint (no heavy DB query)
 app.get("/health", (req, res) => {
