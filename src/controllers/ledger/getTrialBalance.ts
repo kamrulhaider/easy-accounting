@@ -110,27 +110,29 @@ export async function getTrialBalance(req: Request, res: Response) {
     let totalDebitBalance = 0;
     let totalCreditBalance = 0;
 
-    const trialAccounts = accounts.map((acc) => {
-      const sums = sumMap.get(acc.id) || { debit: 0, credit: 0 };
-      const net = sums.debit - sums.credit;
-      const debitBalance = net >= 0 ? net : 0;
-      const creditBalance = net < 0 ? -net : 0;
-      totalDebit += sums.debit;
-      totalCredit += sums.credit;
-      totalDebitBalance += debitBalance;
-      totalCreditBalance += creditBalance;
-      return {
-        id: acc.id,
-        name: acc.name,
-        accountType: acc.accountType,
-        status: acc.status,
-        debit: sums.debit,
-        credit: sums.credit,
-        net,
-        debitBalance,
-        creditBalance,
-      };
-    });
+    const trialAccounts = accounts
+      .map((acc) => {
+        const sums = sumMap.get(acc.id) || { debit: 0, credit: 0 };
+        const net = sums.debit - sums.credit;
+        const debitBalance = net >= 0 ? net : 0;
+        const creditBalance = net < 0 ? -net : 0;
+        totalDebit += sums.debit;
+        totalCredit += sums.credit;
+        totalDebitBalance += debitBalance;
+        totalCreditBalance += creditBalance;
+        return {
+          id: acc.id,
+          name: acc.name,
+          accountType: acc.accountType,
+          status: acc.status,
+          debit: sums.debit,
+          credit: sums.credit,
+          net,
+          debitBalance,
+          creditBalance,
+        };
+      })
+      .filter((acc) => acc.debit !== 0 || acc.credit !== 0);
 
     return res.json({
       accounts: trialAccounts,

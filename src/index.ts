@@ -14,6 +14,7 @@ import { journalEntryRouter } from "./routers/journalEntry";
 import { ledgerRouter } from "./routers/ledger";
 import { trialBalanceRouter } from "./routers/trialBalance";
 import { auditLogRouter } from "./routers/auditLog";
+import { dashboardRouter } from "./routers/dashboard";
 import cors from "cors";
 
 export const app = express();
@@ -33,6 +34,7 @@ app.use("/journal-entries", journalEntryRouter);
 app.use("/ledger", ledgerRouter);
 app.use("/trial-balance", trialBalanceRouter);
 app.use("/audit-logs", auditLogRouter);
+app.use("/dashboard", dashboardRouter);
 
 // Lightweight health endpoint (no heavy DB query)
 app.get("/health", (req, res) => {
@@ -45,6 +47,6 @@ app.use(errorHandler);
 if (require.main === module) {
   const port = Number(process.env.PORT) || 4000;
   app.listen(port, () =>
-    console.log(`Server running on http://localhost:${port}`)
+    console.log(`Server running on http://localhost:${port}`),
   );
 }
