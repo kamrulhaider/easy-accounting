@@ -37,6 +37,25 @@ Requires `Authorization: Bearer <token>`. Roles vary per route.
 - Success: `{ company }`
 - Errors: `400` no valid fields or email conflict, `401` unauthorized, `403` forbidden, `404` not found, `500` on failure
 
+### PATCH /companies/my
+
+- Role: `COMPANY_ADMIN`
+- Scope: updates only the admin's own company (derived from the authenticated user's `companyId`)
+- Body: any of `{ description, address, phone, currency }`
+- Success: `{ company }`
+- Errors: `400` no valid fields, `401` unauthorized, `403` forbidden, `404` company not found, `500` on failure
+
+Example request body:
+
+```json
+{
+  "description": "Updated company description",
+  "address": "123 Main St, City",
+  "phone": "+880123456789",
+  "currency": "USD"
+}
+```
+
 ### PATCH /companies/:id/deactivate
 
 - Role: `SUPER_ADMIN`

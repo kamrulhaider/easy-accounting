@@ -8,6 +8,7 @@ import { getCompany } from "../../controllers/company/getCompany";
 import { deactivateCompany } from "../../controllers/company/deactivateCompany";
 import { reactivateCompany } from "../../controllers/company/reactivateCompany";
 import { deleteCompany } from "../../controllers/company/deleteCompany";
+import { updateOwnCompany } from "../../controllers/company/updateOwnCompany";
 
 export const companyRouter = Router();
 
@@ -17,39 +18,46 @@ companyRouter.post("/", requireRole([UserRole.SUPER_ADMIN]), createCompany);
 companyRouter.get(
   "/",
   requireRole([UserRole.SUPER_ADMIN, UserRole.MODERATOR]),
-  getCompanies
+  getCompanies,
+);
+
+// PATCH /companies/my - company admin updates their own company's info
+companyRouter.patch(
+  "/my",
+  requireRole([UserRole.COMPANY_ADMIN]),
+  updateOwnCompany,
 );
 
 companyRouter.patch(
   "/:id",
   requireRole([UserRole.SUPER_ADMIN, UserRole.MODERATOR]),
-  updateCompany
+  updateCompany,
 );
 
 // GET /companies/:id - fetch a single company
 companyRouter.get(
   "/:id",
   requireRole([UserRole.SUPER_ADMIN, UserRole.MODERATOR]),
-  getCompany
+  getCompany,
 );
 
 // PATCH /companies/:id/deactivate
 companyRouter.patch(
   "/:id/deactivate",
   requireRole([UserRole.SUPER_ADMIN]),
-  deactivateCompany
+  deactivateCompany,
 );
 
 // PATCH /companies/:id/reactivate
 companyRouter.patch(
   "/:id/reactivate",
   requireRole([UserRole.SUPER_ADMIN, UserRole.MODERATOR]),
-  reactivateCompany
+  reactivateCompany,
 );
 
 // DELETE /companies/:id (soft delete)
 companyRouter.delete(
   "/:id",
   requireRole([UserRole.SUPER_ADMIN]),
-  deleteCompany
+  deleteCompany,
 );

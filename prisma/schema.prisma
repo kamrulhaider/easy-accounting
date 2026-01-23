@@ -60,6 +60,7 @@ model Company {
   description String? // optional
   address     String? // optional
   phone       String? // optional
+  currency    String  @default("BDT")
 
   status CommonStatus @default(ACTIVE)
 
@@ -85,6 +86,8 @@ model AccountCategory {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([name, companyId])
 }
 
 model Account {
