@@ -13,6 +13,7 @@ import { accountCategoryRouter } from "./routers/accountCategory";
 import { journalEntryRouter } from "./routers/journalEntry";
 import { ledgerRouter } from "./routers/ledger";
 import { trialBalanceRouter } from "./routers/trialBalance";
+import { balanceSheetRouter } from "./routers/balanceSheet";
 import { auditLogRouter } from "./routers/auditLog";
 import { dashboardRouter } from "./routers/dashboard";
 import cors from "cors";
@@ -33,6 +34,7 @@ app.use("/account-categories", accountCategoryRouter);
 app.use("/journal-entries", journalEntryRouter);
 app.use("/ledger", ledgerRouter);
 app.use("/trial-balance", trialBalanceRouter);
+app.use("/balance-sheet", balanceSheetRouter);
 app.use("/audit-logs", auditLogRouter);
 app.use("/dashboard", dashboardRouter);
 
