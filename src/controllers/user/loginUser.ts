@@ -32,6 +32,31 @@ export async function loginUser(req: Request, res: Response) {
     if (!valid) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
+
+    // Block login for inactive or soft-deleted users
+    if (user.deletedAt) {
+      return res.status(403).json({ error: "User is deleted" });
+    }
+    if (user.status !== "ACTIVE") {
+      return res.status(403).json({ error: "User is inactive" });
+    }
+
+    // Block login if the user's company is inactive or deleted (for company-scoped roles)
+    if (user.userRole === "COMPANY_ADMIN" || user.userRole === "COMPANY_USER") {
+      if (!user.companyId) {
+        return res.status(403).json({ error: "Company not found for user" });
+      }
+      const company = await prisma.company.findUnique({
+        where: { id: user.companyId },
+        select: { status: true, deletedAt: true },
+      });
+      if (!company || company.status !== "ACTIVE" || company.deletedAt) {
+        return res
+          .status(403)
+          .json({ error: "Company is inactive or deleted" });
+      }
+    }
+
     const token = signToken({ sub: user.id, role: user.userRole });
     logger.info({ evt: "auth:login", userId: user.id, role: user.userRole });
     return res.json({

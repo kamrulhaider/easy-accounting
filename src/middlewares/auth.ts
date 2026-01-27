@@ -46,7 +46,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
 export async function loadUser(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   const auth = req.header("authorization");
   let userId: string | undefined;
@@ -72,6 +72,31 @@ export async function loadUser(
     try {
       const user = await prisma.user.findUnique({ where: { id: userId } });
       if (user) {
+        // Enforce user and company status before allowing request to proceed
+        if (user.deletedAt) {
+          return res
+            .status(403)
+            .json({ error: "User is deleted", requestId: req.requestId });
+        }
+        if (user.status !== "ACTIVE") {
+          return res
+            .status(403)
+            .json({ error: "User is inactive", requestId: req.requestId });
+        }
+
+        if (user.companyId) {
+          const company = await prisma.company.findUnique({
+            where: { id: user.companyId },
+            select: { status: true, deletedAt: true },
+          });
+          if (!company || company.status !== "ACTIVE" || company.deletedAt) {
+            return res.status(403).json({
+              error: "Company is inactive or deleted",
+              requestId: req.requestId,
+            });
+          }
+        }
+
         req.user = {
           id: user.id,
           userRole: user.userRole,
@@ -100,7 +125,7 @@ export async function loadUser(
 export function attachAuditContext(
   req: Request,
   _res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   const ctx = {
     userId: req.user?.id,
@@ -126,7 +151,7 @@ export function errorHandler(
   err: any,
   req: Request,
   res: Response,
-  _next: NextFunction
+  _next: NextFunction,
 ) {
   const status = err.status || 500;
   logger.error({

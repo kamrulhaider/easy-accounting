@@ -8,6 +8,7 @@ import { updateCompanyUser } from "../../controllers/user/updateCompanyUser";
 import { deleteCompanyUser } from "../../controllers/user/deleteCompanyUser";
 import { getAllUsers } from "../../controllers/user/getAllUsers";
 import { updateCompanyAdmin } from "../../controllers/user/updateCompanyAdmin";
+import { resetCompanyAdminPassword } from "../../controllers/user/resetCompanyAdminPassword";
 
 export const usersRouter = Router();
 
@@ -18,7 +19,14 @@ usersRouter.get("/all", requireRole([UserRole.SUPER_ADMIN]), getAllUsers);
 usersRouter.patch(
   "/admins/:id",
   requireRole([UserRole.SUPER_ADMIN]),
-  updateCompanyAdmin
+  updateCompanyAdmin,
+);
+
+// SUPER_ADMIN-only: reset a COMPANY_ADMIN password to default
+usersRouter.post(
+  "/admins/:id/reset-password",
+  requireRole([UserRole.SUPER_ADMIN]),
+  resetCompanyAdminPassword,
 );
 
 // All other endpoints restricted to COMPANY_ADMIN within own company
@@ -28,10 +36,10 @@ usersRouter.get("/:id", requireRole([UserRole.COMPANY_ADMIN]), getCompanyUser);
 usersRouter.patch(
   "/:id",
   requireRole([UserRole.COMPANY_ADMIN]),
-  updateCompanyUser
+  updateCompanyUser,
 );
 usersRouter.delete(
   "/:id",
   requireRole([UserRole.COMPANY_ADMIN]),
-  deleteCompanyUser
+  deleteCompanyUser,
 );
