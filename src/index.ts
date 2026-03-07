@@ -21,6 +21,7 @@ import cors from "cors";
 export const app = express();
 app.use(express.json());
 app.use(cors());
+
 app.use(requestLogger);
 app.use(loadUser);
 app.use(attachAuditContext);
@@ -38,10 +39,6 @@ app.use("/balance-sheet", balanceSheetRouter);
 app.use("/audit-logs", auditLogRouter);
 app.use("/dashboard", dashboardRouter);
 
-// Lightweight health endpoint (no heavy DB query)
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", uptime: process.uptime(), timestamp: Date.now() });
-});
 app.get("/", (_req, res) => res.send("Easy-Accouting is running"));
 // Error handler (after routes)
 app.use(errorHandler);

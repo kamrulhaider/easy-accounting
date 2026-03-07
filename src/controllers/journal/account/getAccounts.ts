@@ -28,16 +28,18 @@ export async function getAccounts(req: Request, res: Response) {
   const limit = allParam
     ? undefined
     : Number.isFinite(limitRaw)
-    ? Math.min(Math.max(limitRaw, 1), 100)
-    : 50;
+      ? Math.min(Math.max(limitRaw, 1), 100)
+      : 50;
   const offset = allParam
     ? 0
     : Number.isFinite(offsetRaw) && offsetRaw > 0
-    ? offsetRaw
-    : 0;
+      ? offsetRaw
+      : 0;
+
+  const hasSearchQuery = typeof q === "string" && q.trim() !== "";
 
   const where: any = { companyId };
-  if (q && typeof q === "string") {
+  if (hasSearchQuery) {
     where.name = { contains: q, mode: "insensitive" };
   }
   if (
@@ -47,13 +49,18 @@ export async function getAccounts(req: Request, res: Response) {
   ) {
     where.accountType = type;
   }
-  if (
-    status &&
+
+  const statusFilterProvided =
     typeof status === "string" &&
-    Object.values(CommonStatus).includes(status as CommonStatus)
-  ) {
+    Object.values(CommonStatus).includes(status as CommonStatus);
+  if (statusFilterProvided) {
     where.status = status;
+  } else if (!hasSearchQuery) {
+    // Default behavior: list only active accounts unless user is searching.
+    // Searching should be able to find inactive accounts too.
+    where.status = CommonStatus.ACTIVE;
   }
+
   if (categoryId && typeof categoryId === "string") {
     if (categoryId === "null") {
       where.categoryId = null;
