@@ -40,13 +40,10 @@ export async function getBalanceSheet(req: Request, res: Response) {
       : undefined;
 
   try {
-    // Only include Asset, Liability, Equity accounts
+    // Include all account types to compute net income for equity
     const accounts = await prisma.account.findMany({
       where: {
         companyId,
-        accountType: {
-          in: [AccountType.ASSET, AccountType.LIABILITY, AccountType.EQUITY],
-        },
         ...(statusFilter ? { status: statusFilter } : {}),
       },
       orderBy: { name: "asc" },
@@ -119,30 +116,46 @@ export async function getBalanceSheet(req: Request, res: Response) {
     let assetsTotal = 0;
     let liabilitiesTotal = 0;
     let equityTotal = 0;
+    let netIncome = 0;
 
     for (const acc of accounts) {
       const sums = sumMap.get(acc.id) || { debit: 0, credit: 0 };
       const net = sums.debit - sums.credit; // debit minus credit
 
       if (acc.accountType === AccountType.ASSET) {
-        const balance = net >= 0 ? net : 0; // assets have debit nature
+        const balance = net; // assets have debit nature, keep contra balances
         if (balance !== 0) {
           assets.push({ id: acc.id, name: acc.name, balance });
           assetsTotal += balance;
         }
       } else if (acc.accountType === AccountType.LIABILITY) {
-        const balance = net < 0 ? -net : 0; // liabilities have credit nature
+        const balance = -net; // liabilities have credit nature
         if (balance !== 0) {
           liabilities.push({ id: acc.id, name: acc.name, balance });
           liabilitiesTotal += balance;
         }
       } else if (acc.accountType === AccountType.EQUITY) {
-        const balance = net < 0 ? -net : 0; // equity has credit nature
+        const balance = -net; // equity has credit nature
         if (balance !== 0) {
           equity.push({ id: acc.id, name: acc.name, balance });
           equityTotal += balance;
         }
+      } else if (
+        acc.accountType === AccountType.REVENUE ||
+        acc.accountType === AccountType.EXPENSE
+      ) {
+        // Net income = sum(credit - debit) across revenue and expense accounts
+        netIncome += sums.credit - sums.debit;
       }
+    }
+
+    if (netIncome !== 0) {
+      equity.push({
+        id: "current-period-net-income",
+        name: "Current Period Net Income",
+        balance: netIncome,
+      });
+      equityTotal += netIncome;
     }
 
     const equationBalanced =
@@ -156,6 +169,7 @@ export async function getBalanceSheet(req: Request, res: Response) {
         assets: assetsTotal,
         liabilities: liabilitiesTotal,
         equity: equityTotal,
+        netIncome,
         equationBalanced,
       },
       filters: {

@@ -26,12 +26,13 @@ Return a balance sheet for a company by aggregating Assets, Liabilities, and Equ
 - Behavior:
   - Requires authenticated user with `companyId` equal to query `companyId`.
   - Validates `startDate` and `endDate` when provided, and ensures `startDate <= endDate`.
-  - Loads company accounts filtered to `ASSET`, `LIABILITY`, and `EQUITY` (excludes `REVENUE` and `EXPENSE`). Optionally filters by account `status`.
+  - Loads company accounts for all types to compute net income and optionally filters by account `status`.
   - Aggregates all non-deleted journal lines for those accounts (within the optional date range and from non-deleted journal entries) and groups by `accountId`.
-  - For each account, computes net = `debit - credit` and maps to section balances by natural side:
-    - Assets: `balance = max(net, 0)` (debit nature)
-    - Liabilities: `balance = max(-net, 0)` (credit nature)
-    - Equity: `balance = max(-net, 0)` (credit nature)
+  - For each account, computes net = `debit - credit` and maps to section balances by natural side (contra balances are preserved):
+    - Assets: `balance = net` (debit nature, negative indicates contra asset)
+    - Liabilities: `balance = -net` (credit nature, negative indicates contra liability)
+    - Equity: `balance = -net` (credit nature, negative indicates contra equity)
+  - Computes net income from `REVENUE` and `EXPENSE` as `sum(credit - debit)` and adds it to Equity as a synthetic line item.
   - Computes section totals and checks accounting equation: `assetsTotal == liabilitiesTotal + equityTotal` (reported via `equationBalanced`).
 
 - Success (200):
@@ -54,6 +55,7 @@ Return a balance sheet for a company by aggregating Assets, Liabilities, and Equ
       "assets": 1000,
       "liabilities": 600,
       "equity": 400,
+      "netIncome": 0,
       "equationBalanced": true
     },
     "filters": {

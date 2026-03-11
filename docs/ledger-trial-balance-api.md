@@ -18,7 +18,6 @@ Return a paginated general ledger for a single account, including running balanc
 
 - Roles: `COMPANY_ADMIN`, `COMPANY_USER`
 - Query parameters:
-
   - `companyId` (string, required)
   - `accountId` (string, required) – id of the account whose ledger to fetch
   - `startDate?` – ISO date string; include only lines whose journal entry date is `>= startDate`
@@ -28,7 +27,6 @@ Return a paginated general ledger for a single account, including running balanc
   - `all?` – `true|false`; when `true`, return all matching lines (no pagination; `limit` ignored and `offset` forced to 0)
 
 - Behavior:
-
   - Requires authenticated user with `companyId` equal to query `companyId`.
   - Validates `companyId` and `accountId` are provided.
   - Validates `startDate` / `endDate` when present.
@@ -57,6 +55,13 @@ Return a paginated general ledger for a single account, including running balanc
         "date": "2024-01-01T00:00:00.000Z",
         "journalEntryId": "...",
         "journalEntryDescription": "Invoice 123",
+        "journalEntry": {
+          "id": "...",
+          "date": "2024-01-01T00:00:00.000Z",
+          "description": "Invoice 123",
+          "createdAt": "...",
+          "updatedAt": "..."
+        },
         "description": "optional line description",
         "debitAmount": 100,
         "creditAmount": 0,
@@ -99,14 +104,12 @@ Return a trial balance for all accounts in a company, with per-account debit/cre
 
 - Roles: `COMPANY_ADMIN`, `COMPANY_USER`
 - Query parameters:
-
   - `companyId` (string, required)
   - `startDate?` – ISO date string; include journal lines whose journal entry date is `>= startDate`
   - `endDate?` – ISO date string; include journal lines whose journal entry date is `<= endDate`
   - `status?` – optional account status filter; must be a valid `CommonStatus` (e.g. `ACTIVE`, `INACTIVE`, etc.)
 
 - Behavior:
-
   - Requires authenticated user with `companyId` equal to query `companyId`.
   - Validates `startDate` and `endDate` when provided, and ensures `startDate <= endDate`.
   - Loads all accounts in the company (optionally filtered by `status`).

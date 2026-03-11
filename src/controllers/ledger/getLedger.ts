@@ -37,13 +37,13 @@ export async function getLedger(req: Request, res: Response) {
   const limit = allParam
     ? undefined
     : Number.isFinite(limitRaw)
-    ? Math.min(Math.max(limitRaw, 1), 100)
-    : 50;
+      ? Math.min(Math.max(limitRaw, 1), 100)
+      : 50;
   const offset = allParam
     ? 0
     : Number.isFinite(offsetRaw) && offsetRaw > 0
-    ? offsetRaw
-    : 0;
+      ? offsetRaw
+      : 0;
 
   try {
     const account = await prisma.account.findUnique({
@@ -118,6 +118,8 @@ export async function getLedger(req: Request, res: Response) {
             id: true,
             date: true,
             description: true,
+            createdAt: true,
+            updatedAt: true,
           },
         },
       },
@@ -132,6 +134,13 @@ export async function getLedger(req: Request, res: Response) {
         date: line.journalEntry.date,
         journalEntryId: line.journalEntry.id,
         journalEntryDescription: line.journalEntry.description,
+        journalEntry: {
+          id: line.journalEntry.id,
+          date: line.journalEntry.date,
+          description: line.journalEntry.description,
+          createdAt: line.journalEntry.createdAt,
+          updatedAt: line.journalEntry.updatedAt,
+        },
         description: line.description,
         debitAmount: line.debitAmount || 0,
         creditAmount: line.creditAmount || 0,
